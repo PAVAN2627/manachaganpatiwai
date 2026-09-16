@@ -8,12 +8,52 @@ import type { EventItem } from '@/lib/types';
 import { ImageUploadField } from '@/components/admin/ImageUploadField';
 import { CalendarDateField, TimePickerField, LocationField } from '@/components/admin/DateTimeLocationHelpers';
 
+/**
+ * Parse date string in format "YYYY-MM-DD" or "DD/MM/YYYY"
+ */
+function parseEventDate(dateStr: string): Date | null {
+  if (!dateStr) return null;
+  
+  // Try YYYY-MM-DD format first
+  if (dateStr.includes('-')) {
+    const [year, month, day] = dateStr.split('-');
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  }
+  
+  // Try DD/MM/YYYY format
+  if (dateStr.includes('/')) {
+    const [day, month, year] = dateStr.split('/');
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  }
+  
+  return null;
+}
+
+/**
+ * Check if event date has passed
+ */
+function isEventPassed(dateStr: string): boolean {
+  const eventDate = parseEventDate(dateStr);
+  if (!eventDate) return false;
+  
+  // Set event date to end of day
+  eventDate.setHours(23, 59, 59, 999);
+  
+  // Compare with today's date
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  return eventDate < today;
+}
+
 export function AdminEvents() {
   const location = useLocation();
   const [events, setEvents] = useState<EventItem[]>([]);
+  const [completedEvents, setCompletedEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<EventItem | null>(null);
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'completed'>('upcoming');
   const [form, setForm] = useState({
     title: '', date: '', time: '', location: '', description: '', image_url: '', published: true,
   });
@@ -22,7 +62,22 @@ export function AdminEvents() {
 
   const fetchData = async () => {
     const { data } = await db.from('events').select('*').order('created_at', { ascending: false });
-    setEvents((data as EventItem[]) || []);
+    const allEvents = (data as EventItem[]) || [];
+    
+    // Separate upcoming and completed events
+    const upcoming: EventItem[] = [];
+    const completed: EventItem[] = [];
+    
+    for (const event of allEvents) {
+      if (isEventPassed(event.date)) {
+        completed.push(event);
+      } else {
+        upcoming.push(event);
+      }
+    }
+    
+    setEvents(upcoming);
+    setCompletedEvents(completed);
     setLoading(false);
   };
 
@@ -77,6 +132,30 @@ export function AdminEvents() {
         <button onClick={() => { resetForm(); setShowForm(true); }} className="px-4 py-2 rounded-lg saffron-gradient text-cream text-sm font-devanagari-sans font-medium hover:shadow-lg flex items-center gap-1.5">
           <Plus className="w-4 h-4" />
           नवीन कार्यक्रम
+        </button>
+      </div>
+
+      {/* Tabs for Upcoming and Completed Events */}
+      <div className="flex gap-2 mb-6 border-b border-golden/20">
+        <button
+          onClick={() => setActiveTab('upcoming')}
+          className={`px-4 py-2.5 text-sm font-devanagari-sans font-medium transition-all border-b-2 ${
+            activeTab === 'upcoming'
+              ? 'border-saffron text-deep-red'
+              : 'border-transparent text-dark-maroon/60 hover:text-dark-maroon'
+          }`}
+        >
+          आगामी कार्यक्रम ({events.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('completed')}
+          className={`px-4 py-2.5 text-sm font-devanagari-sans font-medium transition-all border-b-2 ${
+            activeTab === 'completed'
+              ? 'border-saffron text-deep-red'
+              : 'border-transparent text-dark-maroon/60 hover:text-dark-maroon'
+          }`}
+        >
+          पूर्ण झालेले कार्यक्रम ({completedEvents.length})
         </button>
       </div>
 
@@ -151,30 +230,60 @@ export function AdminEvents() {
 
       {loading ? (
         <div className="text-center text-dark-maroon/50 font-devanagari-sans py-8">माहिती लोड होत आहे...</div>
-      ) : events.length === 0 ? (
-        <div className="text-center py-12 bg-cream rounded-2xl card-shadow gold-border-thin">
-          <p className="text-dark-maroon/60 font-devanagari-sans">कोणताही कार्यक्रम नाही. नवीन कार्यक्रम जोडा.</p>
-        </div>
+      ) : activeTab === 'upcoming' ? (
+        // Upcoming Events Tab
+        events.length === 0 ? (
+          <div className="text-center py-12 bg-cream rounded-2xl card-shadow gold-border-thin">
+            <p className="text-dark-maroon/60 font-devanagari-sans">कोणताही आगामी कार्यक्रम नाही. नवीन कार्यक्रम जोडा.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {events.map((event) => (
+              <div key={event.id} className="bg-cream rounded-2xl p-5 card-shadow gold-border-thin">
+                <div className="flex items-start justify-between mb-2">
+                  <h3 className="text-sm font-devanagari-serif font-bold text-deep-red">{event.title}</h3>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-devanagari-sans ${event.published ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{event.published ? 'प्रकाशित' : 'मसुदा'}</span>
+                </div>
+                <div className="text-xs text-dark-maroon/50 font-devanagari-sans space-y-0.5 mb-3">
+                  <div>📅 {event.date}</div>
+                  {event.time && <div>⏰ {event.time}</div>}
+                  {event.location && <div>📍 {event.location}</div>}
+                </div>
+                <div className="flex gap-1.5">
+                  <button onClick={() => handleEdit(event)} className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100"><Edit2 className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => handleDelete(event.id)} className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"><Trash2 className="w-3.5 h-3.5" /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {events.map((event) => (
-            <div key={event.id} className="bg-cream rounded-2xl p-5 card-shadow gold-border-thin">
-              <div className="flex items-start justify-between mb-2">
-                <h3 className="text-sm font-devanagari-serif font-bold text-deep-red">{event.title}</h3>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-devanagari-sans ${event.published ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{event.published ? 'प्रकाशित' : 'मसुदा'}</span>
+        // Completed Events Tab
+        completedEvents.length === 0 ? (
+          <div className="text-center py-12 bg-cream rounded-2xl card-shadow gold-border-thin">
+            <p className="text-dark-maroon/60 font-devanagari-sans">कोणताही पूर्ण झालेला कार्यक्रम नाही.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {completedEvents.map((event) => (
+              <div key={event.id} className="bg-cream rounded-2xl p-5 card-shadow gold-border-thin opacity-75">
+                <div className="flex items-start justify-between mb-2">
+                  <h3 className="text-sm font-devanagari-serif font-bold text-deep-red">{event.title}</h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-devanagari-sans bg-gray-200 text-gray-700">पूर्ण</span>
+                </div>
+                <div className="text-xs text-dark-maroon/50 font-devanagari-sans space-y-0.5 mb-3">
+                  <div>📅 {event.date}</div>
+                  {event.time && <div>⏰ {event.time}</div>}
+                  {event.location && <div>📍 {event.location}</div>}
+                </div>
+                <div className="flex gap-1.5">
+                  <button onClick={() => handleEdit(event)} className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100"><Edit2 className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => handleDelete(event.id)} className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"><Trash2 className="w-3.5 h-3.5" /></button>
+                </div>
               </div>
-              <div className="text-xs text-dark-maroon/50 font-devanagari-sans space-y-0.5 mb-3">
-                <div>📅 {event.date}</div>
-                {event.time && <div>⏰ {event.time}</div>}
-                {event.location && <div>📍 {event.location}</div>}
-              </div>
-              <div className="flex gap-1.5">
-                <button onClick={() => handleEdit(event)} className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100"><Edit2 className="w-3.5 h-3.5" /></button>
-                <button onClick={() => handleDelete(event.id)} className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"><Trash2 className="w-3.5 h-3.5" /></button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )
       )}
     </AdminLayout>
   );

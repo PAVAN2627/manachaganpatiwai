@@ -69,3 +69,9 @@ export function downloadCanvasAsPng(canvas: HTMLCanvasElement, filename: string)
   link.href = canvas.toDataURL('image/png');
   link.click();
 }
+
+export function toDevanagariNumerals(num: number | string | null | undefined): string {
+  if (num === null || num === undefined) return '';
+  const devanagariDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
+  return String(num).replace(/[0-9]/g, (w) => devanagariDigits[+w]);
+}

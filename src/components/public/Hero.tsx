@@ -333,7 +333,7 @@ export function Hero() {
             <div className="flex items-center justify-center lg:justify-start gap-2 pt-1">
               <span className="text-golden/70 hidden sm:inline text-xl">❧</span>
               <div className="inline-flex items-center gap-2 px-6 sm:px-7 py-2 rounded-full bg-[#7e141c] text-cream font-devanagari-sans font-bold text-sm sm:text-base shadow-md border-2 border-golden/50">
-                <span>स्थापना : {settings.establishment_year}</span>
+                <span>स्थापना : १८९४</span>
               </div>
               <span className="text-golden/70 hidden sm:inline text-xl">☙</span>
             </div>
@@ -417,7 +417,7 @@ export function Hero() {
         {/* Bottom Feature Cards Row (4 Cards Matching Reference) */}
         <div className="mt-12 sm:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
-          {/* Card 1: स्थापना 1894 */}
+          {/* Card 1: स्थापना १८९४ */}
           <div className="bg-[#fffef8] rounded-2xl p-4 sm:p-5 card-shadow border border-golden/30 flex items-center gap-4 hover:shadow-md transition-all">
             <div className="w-12 h-12 rounded-full bg-golden/15 border border-golden/30 flex items-center justify-center shrink-0">
               <svg className="w-6 h-6 text-golden" viewBox="0 0 24 24" fill="currentColor">
@@ -427,7 +427,7 @@ export function Hero() {
             <div className="min-w-0">
               <span className="text-xs text-dark-maroon/60 font-devanagari-sans block">स्थापना</span>
               <span className="text-lg sm:text-xl font-devanagari-serif font-extrabold text-[#7e141c] block">
-                {settings.establishment_year}
+                १८९४
               </span>
               <div className="w-8 h-0.5 bg-golden/40 mt-1" />
             </div>

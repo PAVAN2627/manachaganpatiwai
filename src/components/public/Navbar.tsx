@@ -100,7 +100,7 @@ export function Navbar() {
                   {settings.tagline}
                 </span>
                 <span className="text-[9px] sm:text-[10px] font-devanagari-sans text-golden/90 leading-none mt-0.5">
-                  — स्थापना : {settings.establishment_year} —
+                  — स्थापना : १८९४ —
                 </span>
               </div>
             </Link>

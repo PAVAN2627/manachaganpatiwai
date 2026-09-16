@@ -22,8 +22,12 @@ export function Contact() {
 
         <Reveal delay={200}>
           <div className="bg-cream rounded-3xl p-8 sm:p-12 card-shadow-lg gold-border text-center">
-            <div className="w-16 h-16 mx-auto rounded-full saffron-gradient flex items-center justify-center gold-border mb-6">
-              <GaneshIcon className="w-10 h-10 text-cream" />
+            <div className="w-20 h-20 mx-auto rounded-full border-3 border-golden p-1 mb-6 flex items-center justify-center bg-white">
+              <img
+                src="/waiganpatilogo.png"
+                alt="श्री धुंडिविनायक मानाचा गणपती लोगो"
+                className="w-full h-full object-contain rounded-full"
+              />
             </div>
 
             <h3 className="text-xl sm:text-2xl font-devanagari-serif font-bold text-deep-red mb-2">
@@ -33,7 +37,7 @@ export function Contact() {
               {settings.tagline}
             </p>
             <p className="text-golden font-devanagari-sans text-sm mb-8">
-              स्थापना : {settings.establishment_year}
+              स्थापना : १८९४
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-4">

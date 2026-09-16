@@ -1,9 +1,9 @@
 import { Reveal } from '@/components/Reveal';
-import { DecorativeBorder, MandalaPattern } from '@/components/decorations';
+import { DecorativeBorder } from '@/components/decorations';
 
 const TIMELINE = [
   {
-    year: '1894',
+    year: '१८९४',
     title: 'मंडळाची स्थापना',
     text: 'परंपरेची सुरुवात आणि वाईच्या ग्रामदैवताच्या भक्तीचा प्रवास.',
   },
@@ -22,7 +22,6 @@ const TIMELINE = [
 export function History() {
   return (
     <section id="history" className="py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden bg-gradient-to-b from-cream to-golden/5">
-      <MandalaPattern className="absolute top-10 right-10 w-64 h-64 text-saffron/10 animate-spin-slow" />
 
       <div className="max-w-5xl mx-auto relative">
         <Reveal>

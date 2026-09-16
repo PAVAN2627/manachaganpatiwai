@@ -4,6 +4,45 @@ import { Reveal } from '@/components/Reveal';
 import { DecorativeBorder } from '@/components/decorations';
 import { dbService as db } from '@/lib/db';
 import type { EventItem } from '@/lib/types';
+
+/**
+ * Parse date string in format "YYYY-MM-DD" or "DD/MM/YYYY"
+ */
+function parseEventDate(dateStr: string): Date | null {
+  if (!dateStr) return null;
+  
+  // Try YYYY-MM-DD format first
+  if (dateStr.includes('-')) {
+    const [year, month, day] = dateStr.split('-');
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  }
+  
+  // Try DD/MM/YYYY format
+  if (dateStr.includes('/')) {
+    const [day, month, year] = dateStr.split('/');
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  }
+  
+  return null;
+}
+
+/**
+ * Check if event date has passed
+ */
+function isEventPassed(dateStr: string): boolean {
+  const eventDate = parseEventDate(dateStr);
+  if (!eventDate) return false;
+  
+  // Set event date to end of day
+  eventDate.setHours(23, 59, 59, 999);
+  
+  // Compare with today's date
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  return eventDate < today;
+}
+
 export function Events() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -16,8 +55,32 @@ export function Events() {
           .select('*')
           .eq('published', true)
           .order('created_at', { ascending: false });
+        
         if (data) {
-          setEvents(data as EventItem[]);
+          const allEvents = data as EventItem[];
+          
+          // Separate upcoming and passed events
+          const upcomingEvents: EventItem[] = [];
+          const passedEventIds: string[] = [];
+          
+          for (const event of allEvents) {
+            if (isEventPassed(event.date)) {
+              passedEventIds.push(event.id);
+            } else {
+              upcomingEvents.push(event);
+            }
+          }
+          
+          // Auto-delete passed events from database
+          for (const eventId of passedEventIds) {
+            try {
+              await db.from('events').delete().eq('id', eventId);
+            } catch (err) {
+              console.warn(`Failed to delete passed event ${eventId}:`, err);
+            }
+          }
+          
+          setEvents(upcomingEvents);
         }
       } catch (err) {
         console.error('Failed to load events:', err);

@@ -48,64 +48,105 @@ export function Footer() {
   });
 
   useEffect(() => {
-    // 1. Immediately increment on every page load or refresh
-    let currentCount = 1;
-    try {
-      localStorage.removeItem('wai_ganpati_visits'); // Clean any legacy keys
-      const stored = localStorage.getItem('wai_realtime_visits');
-      const parsed = stored ? parseInt(stored, 10) : 0;
-      currentCount = !isNaN(parsed) && parsed > 0 && parsed < 18540 ? parsed + 1 : 1;
-      localStorage.setItem('wai_realtime_visits', currentCount.toString());
-      setVisitorCount(currentCount);
-    } catch {
-      // ignore
-    }
+    // Check if this is the user's first visit to the website in this session
+    let currentCount = visitorCount;
+    const isFirstVisit = !sessionStorage.getItem('wai_session_started');
 
-    // 2. Realtime listener & increment on Firestore document 'stats/visits'
-    const statsDocRef = doc(firestoreDb, 'stats', 'visits');
+    if (isFirstVisit) {
+      // Mark that user has already visited in this session
+      sessionStorage.setItem('wai_session_started', 'true');
 
-    // Send realtime increment to Firestore for every refresh/visit
-    setDoc(
-      statsDocRef,
-      {
-        count: increment(1),
-        last_visit: new Date().toISOString(),
-      },
-      { merge: true }
-    ).catch((err) => {
-      console.warn('Realtime visitor increment note:', err);
-    });
+      try {
+        // Get local stored count
+        const stored = localStorage.getItem('wai_realtime_visits');
+        const parsed = stored ? parseInt(stored, 10) : 0;
+        
+        // Only consider valid counts (between 1 and 18540 to avoid legacy mock values)
+        if (!isNaN(parsed) && parsed > 0 && parsed < 18540) {
+          currentCount = parsed + 1;
+        } else {
+          currentCount = 1;
+        }
+        
+        // Save updated count to local storage
+        localStorage.setItem('wai_realtime_visits', currentCount.toString());
+        setVisitorCount(currentCount);
+      } catch (err) {
+        console.error('Local storage error:', err);
+      }
 
-    const unsubscribe = onSnapshot(
-      statsDocRef,
-      (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.data();
-          const remoteCount = data?.count;
+      // Realtime listener & increment on Firestore document 'stats/visits' ONLY on first visit
+      const statsDocRef = doc(firestoreDb, 'stats', 'visits');
 
-          // If Firestore document has legacy mock value (around 18540), reset it to our real count!
-          if (typeof remoteCount === 'number' && remoteCount >= 18540 && remoteCount <= 18550) {
-            setDoc(statsDocRef, { count: currentCount, reset_at: new Date().toISOString() }, { merge: true }).catch(() => {});
-            setVisitorCount(currentCount);
-            return;
-          }
+      // Send increment to Firestore only on first visit
+      setDoc(
+        statsDocRef,
+        {
+          count: increment(1),
+          last_visit: new Date().toISOString(),
+        },
+        { merge: true }
+      ).catch((err) => {
+        console.warn('Realtime visitor increment note:', err);
+      });
 
-          if (typeof remoteCount === 'number' && remoteCount > 0) {
-            setVisitorCount(remoteCount);
-            try {
-              localStorage.setItem('wai_realtime_visits', remoteCount.toString());
-            } catch {
-              // ignore
+      const unsubscribe = onSnapshot(
+        statsDocRef,
+        (snapshot) => {
+          if (snapshot.exists()) {
+            const data = snapshot.data();
+            const remoteCount = data?.count;
+
+            // If Firestore document has legacy mock value (around 18540), reset it to our real count!
+            if (typeof remoteCount === 'number' && remoteCount >= 18540 && remoteCount <= 18550) {
+              setDoc(statsDocRef, { count: currentCount, reset_at: new Date().toISOString() }, { merge: true }).catch(() => {});
+              setVisitorCount(currentCount);
+              return;
+            }
+
+            if (typeof remoteCount === 'number' && remoteCount > 0) {
+              setVisitorCount(remoteCount);
+              try {
+                localStorage.setItem('wai_realtime_visits', remoteCount.toString());
+              } catch {
+                // ignore
+              }
             }
           }
+        },
+        (error) => {
+          console.warn('Realtime visitor counter snapshot warning:', error);
         }
-      },
-      (error) => {
-        console.warn('Realtime visitor counter snapshot warning:', error);
-      }
-    );
+      );
 
-    return () => unsubscribe();
+      return () => unsubscribe();
+    } else {
+      // User is already in an active session - just read the current count from Firestore
+      const statsDocRef = doc(firestoreDb, 'stats', 'visits');
+      const unsubscribe = onSnapshot(
+        statsDocRef,
+        (snapshot) => {
+          if (snapshot.exists()) {
+            const data = snapshot.data();
+            const remoteCount = data?.count;
+
+            if (typeof remoteCount === 'number' && remoteCount > 0) {
+              setVisitorCount(remoteCount);
+              try {
+                localStorage.setItem('wai_realtime_visits', remoteCount.toString());
+              } catch {
+                // ignore
+              }
+            }
+          }
+        },
+        (error) => {
+          console.warn('Realtime visitor counter snapshot warning:', error);
+        }
+      );
+
+      return () => unsubscribe();
+    }
   }, []);
 
   const handleNavClick = (path: string) => {
@@ -172,12 +213,12 @@ export function Footer() {
             </div>
 
             <p className="text-cream/80 text-xs sm:text-sm font-devanagari-sans leading-relaxed">
-              दक्षिण काशी म्हणून ओळखल्या जाणाऱ्या वाई शहरात, कृष्णा नदीच्या घाटावर सन {settings.establishment_year} पासून अखंड भक्ती, संस्कृती आणि सामाजिक एकात्मतेचा वारसा जपणारे मानाचे गणेशोत्सव मंडळ.
+              दक्षिण काशी म्हणून ओळखल्या जाणाऱ्या वाई शहरात, कृष्णा नदीच्या घाटावर सन १८९४ पासून अखंड भक्ती, संस्कृती आणि सामाजिक एकात्मतेचा वारसा जपणारे मानाचे गणेशोत्सव मंडळ.
             </p>
 
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-golden/15 border border-golden/30 text-golden text-xs font-devanagari-sans font-semibold">
               <Sparkles className="w-3.5 h-3.5" />
-              स्थापना सन : {settings.establishment_year} (१३०+ वर्षे)
+              स्थापना सन : १८९४ (१३०+ वर्षे)
             </div>
           </div>
 
