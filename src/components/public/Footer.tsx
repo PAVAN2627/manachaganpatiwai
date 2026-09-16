@@ -37,26 +37,44 @@ const QUICK_LINKS = [
 export function Footer() {
   const { settings } = useSettings();
   const { user } = useAuth();
-  const [visitorCount, setVisitorCount] = useState<number>(1);
+  const [visitorCount, setVisitorCount] = useState<number>(() => {
+    try {
+      const stored = localStorage.getItem('wai_realtime_visits');
+      const val = stored ? parseInt(stored, 10) : 0;
+      return !isNaN(val) && val > 0 && val < 18540 ? val : 1;
+    } catch {
+      return 1;
+    }
+  });
 
   useEffect(() => {
-    // 1. Clear any old mock values (>= 18540) from local cache
+    // 1. Immediately increment on every page load or refresh
+    let currentCount = 1;
     try {
-      const local = localStorage.getItem('wai_ganpati_visits');
-      if (local) {
-        const num = parseInt(local, 10);
-        if (!isNaN(num) && num < 18540) {
-          setVisitorCount(num);
-        } else {
-          localStorage.removeItem('wai_ganpati_visits');
-        }
-      }
+      localStorage.removeItem('wai_ganpati_visits'); // Clean any legacy keys
+      const stored = localStorage.getItem('wai_realtime_visits');
+      const parsed = stored ? parseInt(stored, 10) : 0;
+      currentCount = !isNaN(parsed) && parsed > 0 && parsed < 18540 ? parsed + 1 : 1;
+      localStorage.setItem('wai_realtime_visits', currentCount.toString());
+      setVisitorCount(currentCount);
     } catch {
       // ignore
     }
 
-    // 2. Realtime listener on Firestore document 'stats/visits'
+    // 2. Realtime listener & increment on Firestore document 'stats/visits'
     const statsDocRef = doc(firestoreDb, 'stats', 'visits');
+
+    // Send realtime increment to Firestore for every refresh/visit
+    setDoc(
+      statsDocRef,
+      {
+        count: increment(1),
+        last_visit: new Date().toISOString(),
+      },
+      { merge: true }
+    ).catch((err) => {
+      console.warn('Realtime visitor increment note:', err);
+    });
 
     const unsubscribe = onSnapshot(
       statsDocRef,
@@ -65,52 +83,27 @@ export function Footer() {
           const data = snapshot.data();
           const remoteCount = data?.count;
 
-          // If the document has the old mock number (around 18540), reset it to 1
+          // If Firestore document has legacy mock value (around 18540), reset it to our real count!
           if (typeof remoteCount === 'number' && remoteCount >= 18540 && remoteCount <= 18550) {
-            setDoc(statsDocRef, { count: 1, reset_at: new Date().toISOString() }, { merge: true }).catch(() => {});
-            setVisitorCount(1);
-            try { localStorage.setItem('wai_ganpati_visits', '1'); } catch {}
+            setDoc(statsDocRef, { count: currentCount, reset_at: new Date().toISOString() }, { merge: true }).catch(() => {});
+            setVisitorCount(currentCount);
             return;
           }
 
-          if (typeof remoteCount === 'number') {
+          if (typeof remoteCount === 'number' && remoteCount > 0) {
             setVisitorCount(remoteCount);
             try {
-              localStorage.setItem('wai_ganpati_visits', remoteCount.toString());
+              localStorage.setItem('wai_realtime_visits', remoteCount.toString());
             } catch {
               // ignore
             }
           }
-        } else {
-          // Initialize genuine realtime counter starting at 1
-          setDoc(statsDocRef, { count: 1, created_at: new Date().toISOString() }, { merge: true }).catch(() => {});
-          setVisitorCount(1);
         }
       },
       (error) => {
         console.warn('Realtime visitor counter snapshot warning:', error);
       }
     );
-
-    // 3. Increment counter once per visitor session in Firestore
-    try {
-      const hasSession = sessionStorage.getItem('wai_session_counted');
-      if (!hasSession) {
-        sessionStorage.setItem('wai_session_counted', 'true');
-        setDoc(
-          statsDocRef,
-          {
-            count: increment(1),
-            last_visit: new Date().toISOString(),
-          },
-          { merge: true }
-        ).catch((err) => {
-          console.warn('Realtime visitor increment note:', err);
-        });
-      }
-    } catch {
-      // ignore
-    }
 
     return () => unsubscribe();
   }, []);
