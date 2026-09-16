@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="mr">
+  <head>
+    <meta charset="utf-8" />
+    <title>श्री धुंडिविनायक मानाचा गणपती | Redirecting...</title>
+    <script>
+      // SPA Fallback redirect for direct URLs (e.g. /gallery, /admin, etc.)
+      var pathSegmentsToKeep = 0;
+      var l = window.location;
+      var redirectUrl =
+        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+        l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?p=/' +
+        encodeURIComponent(l.pathname.slice(1) + l.search + l.hash);
+      l.replace(redirectUrl);
+    </script>
+  </head>
+  <body style="background:#fffcf2; display:flex; align-items:center; justify-content:center; height:100vh; font-family:sans-serif; color:#7e141c;">
+    <p>कृपया प्रतीक्षा करा, पेज उघडत आहे...</p>
+  </body>
+</html>

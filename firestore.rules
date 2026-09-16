@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function to verify that user is logged in as Admin
+    function isAdmin() {
+      return request.auth != null;
+    }
+
+    // 1. Settings (मंडळाची माहिती व सेटिंग्ज): Public read, Admin add/edit/delete
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 2. Announcements (घोषणा): Public read, Admin add/edit/delete
+    match /announcements/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 3. Events (कार्यक्रम): Public read, Admin add/edit/delete
+    match /events/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 4. Albums (छायाचित्र अल्बम): Public read, Admin add/edit/delete
+    match /albums/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 5. Years (उत्सव वर्षे): Public read, Admin add/edit/delete
+    match /years/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 6. Realtime Visitor Stats (भाविक भेट संख्या): Public read and realtime increment
+    match /stats/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // 7. All other collections fallback
+    match /{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}
