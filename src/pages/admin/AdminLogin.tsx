@@ -23,10 +23,6 @@ export function AdminLogin() {
     }
   }, [user, authLoading, navigate]);
 
-  const fillDefault = () => {
-    setEmail('admin@dhundivinayak.in');
-    setPassword('ganpati1894');
-  };
 
   useSeoMetadata({
     title: 'Admin Login | श्री धुंडिविनायक मानाचा गणपती',
@@ -150,23 +146,6 @@ export function AdminLogin() {
             </button>
           </form>
 
-          <div className="mt-5 pt-4 border-t border-golden/20">
-            <div className="bg-golden/5 rounded-xl p-3.5 text-center">
-              <p className="text-xs text-dark-maroon/60 font-devanagari-sans mb-1 font-semibold">
-                प्रशासक लॉगिन माहिती (डेमो / चाचणी)
-              </p>
-              <p className="text-xs text-dark-maroon/70 font-devanagari-sans">
-                ईमेल: <span className="font-medium text-deep-red">admin@dhundivinayak.in</span> | पासवर्ड: <span className="font-medium text-deep-red">ganpati1894</span>
-              </p>
-              <button
-                type="button"
-                onClick={fillDefault}
-                className="mt-2 text-xs text-saffron font-devanagari-sans font-semibold hover:underline"
-              >
-                माहिती आपोआप भरा (१-क्लिक) →
-              </button>
-            </div>
-          </div>
 
           <div className="mt-4 text-center">
             <button
